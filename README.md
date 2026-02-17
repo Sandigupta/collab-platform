@@ -1,7 +1,7 @@
 # CollabFlow - Real-Time Collaboration Platform
 
-![Project Screenshot 1](placeholder-image-1.png)
-![Project Screenshot 2](placeholder-image-2.png)
+<img width="1920" height="3982" alt="Image" src="https://github.com/user-attachments/assets/622d41a1-2e67-4620-b277-aeaceba0b5cf" />
+
 
 ## Overview
 
