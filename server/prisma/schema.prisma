@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  avatar       String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  ownedBoards     Board[]          @relation("BoardOwner")
+  boardMemberships BoardMember[]
+  taskAssignments  TaskAssignment[]
+  activities       Activity[]
+
+  @@map("users")
+}
+
+model Board {
+  id              String   @id @default(uuid())
+  title           String
+  backgroundImage String?  @map("background_image")
+  ownerId         String   @map("owner_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  owner    User          @relation("BoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members  BoardMember[]
+  columns  Column[]
+  activities Activity[]
+
+  @@index([ownerId])
+  @@map("boards")
+}
+
+model BoardMember {
+  boardId String @map("board_id")
+  userId  String @map("user_id")
+
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([boardId, userId])
+  @@map("board_members")
+}
+
+model Column {
+  id       String @id @default(uuid())
+  boardId  String @map("board_id")
+  title    String
+  position Int
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@index([boardId])
+  @@index([boardId, position])
+  @@map("columns")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  columnId    String    @map("column_id")
+  title       String
+  description String?   @db.Text
+  position    Int
+  priority    Priority  @default(MEDIUM)
+  dueDate     DateTime? @map("due_date")
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  column      Column           @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assignments TaskAssignment[]
+  checklists  ChecklistItem[]
+  activities  Activity[]
+
+  @@index([columnId])
+  @@index([columnId, position])
+  @@map("tasks")
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model TaskAssignment {
+  taskId String @map("task_id")
+  userId String @map("user_id")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+  @@map("task_assignments")
+}
+
+model ChecklistItem {
+  id        String  @id @default(uuid())
+  taskId    String  @map("task_id")
+  title     String
+  completed Boolean @default(false)
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("checklist_items")
+}
+
+model Activity {
+  id        String       @id @default(uuid())
+  boardId   String       @map("board_id")
+  taskId    String?      @map("task_id")
+  userId    String       @map("user_id")
+  type      ActivityType @default(HISTORY)
+  action    String       @db.Text
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  task  Task?  @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([boardId])
+  @@index([taskId])
+  @@map("activities")
+}
+
+enum ActivityType {
+  HISTORY
+  COMMENT
+}
